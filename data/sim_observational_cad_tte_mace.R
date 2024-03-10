@@ -111,8 +111,8 @@ colnames(cov_bs) <- covs
 # treatment. Treatment assignment probabilities follows a logistic
 # regression model with main effects only
 gammas <- c(
-  log(3.5), # Intercept fixed to have roughly 25% in the new treatment
-  log(0.96), log(1.4), log(0.85), log(0.85), log(0.7), log(0.85),
+  log(0.15), # Intercept fixed to have roughly 25% in the new treatment
+  log(0.96), log(1.4), log(0.95), log(0.85), log(0.7), log(0.85),
   log(0.8), log(0.75), log(0.75), log(0.75), log(1.1), log(0.9)
 )
 tr_mat <- cbind(rep(1, n), cov_bs)
@@ -141,7 +141,27 @@ tr_cov_mat <- cbind(treat, cov_bs)
 #    follow-up are limited and most of them are used for patients with
 #    poor prognoses and assigned to the new treatment.
 
+# Time-to-MACE are generated from an accelerated failure time
+# log-normal model. Time-to-censoring from an exponential model.
 
 # 3A) Homogenous treatment effect and indep censoring ------------------
-betas <- 
+betas <- c(
+  log(5), # Intercept fixed to have 20% of MACE in the control
+  log(1.22), log(0.9), log(1.08), log(1.25), log(1.6), log(1.4),
+  log(1.8), log(1.8), log(1.8), log(1.5), log(0.87), log(1.5)
+)
+
+eta <- cbind(rep(1, n), cov_bs) %*% betas
+eff <- -0.05
+tte_0 <- exp(eta + rnorm(n = n))
+tte_1 <- exp(eta + eff + rnorm(n = n))
+tte <- ifelse(treat == 0, tte_0, tte_1)
+fup <- ifelse(tte <= 365.25 * 5, tte, 365.25 * 5)
+mace <- ifelse(tte <= 365.25 * 5, 1, 0)
+mean(mace)
+
+d1 <- as.data.frame(cbind(fup, mace, tr_cov_mat))
+d1$id <- seq_along(n)
+
+# 3B) Heterogeneous treatment effect and indep censoring ---------------
 

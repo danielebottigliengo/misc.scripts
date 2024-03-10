@@ -107,8 +107,41 @@ cov_bs[, 12] <- qbinom(p = u_bs[, 10], size = 1, prob = 0.70)
 colnames(cov_bs) <- covs
 
 # 2) Simulate treatment assignment -------------------------------------
-# More severe patients are more
+# More severe patients are more likely to be assigned to the standard
+# treatment. Treatment assignment probabilities follows a logistic
+# regression model with main effects only
+gammas <- c(
+  log(3.5), # Intercept fixed to have roughly 25% in the new treatment
+  log(0.96), log(1.4), log(0.85), log(0.85), log(0.7), log(0.85),
+  log(0.8), log(0.75), log(0.75), log(0.75), log(1.1), log(0.9)
+)
+tr_mat <- cbind(rep(1, n), cov_bs)
+ps <- plogis(tr_mat %*% gammas)
+treat <- rbinom(n = n, size = 1, prob = ps)
+mean(treat)
+tr_cov_mat <- cbind(treat, cov_bs)
+
+# 3) Simulate the outcome ----------------------------------------------
+# Simulate the time-to-MACE from an accelerated failure time
+# model to allows non proportional hazards. We consider a situation
+# where the non-inferiority of the new treatment shows up later in the
+# follow-up time.
+
+# Four scenarios are considered, depending on the following two
+# factors:
+
+# 1) Homogeneous and heterogeneous treatment effect. For the second
+#    situation, we consider the new treatment as being more beneficial
+#    for patients with a better prognosis.
+
+# 2) Independent and dependent-on-baseline covariates censoring. For the
+#    latter, we allow patients with better prognosis and assigned to
+#    the experimental treatment to have earlier drop-out. This would
+#    mimic a situation where resources for data collection on the
+#    follow-up are limited and most of them are used for patients with
+#    poor prognoses and assigned to the new treatment.
 
 
-
+# 3A) Homogenous treatment effect and indep censoring ------------------
+betas <- 
 

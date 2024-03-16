@@ -24,6 +24,7 @@
 # Load packages --------------------------------------------------------
 library(tidyverse)
 library(MASS)
+library(splines)
 
 # 1) Simulate 12 clinical baseline covariates --------------------------
 # Simulation from a latent multivariate normal to mimic a CAD population
@@ -112,10 +113,19 @@ colnames(cov_bs) <- covs
 # regression model with main effects only
 gammas <- c(
   log(0.15), # Intercept fixed to have roughly 25% in the new treatment
-  log(0.96), log(1.4), log(0.95), log(0.85), log(0.7), log(0.85),
-  log(0.8), log(0.75), log(0.75), log(0.75), log(1.1), log(0.9)
+  log(0.96), log(0.85), # Splines coefficients for age
+  log(1.4), log(0.95), log(0.85), log(0.7), log(0.85),
+  log(0.8), log(0.75), log(0.75), log(0.75), 
+  log(1.1), log(1.2),  # Splines coefficients for LVEF
+  log(0.9)
 )
-tr_mat <- cbind(rep(1, n), cov_bs)
+tr_mat <- cbind(
+  rep(1, n), 
+  ns(cov_bs[, 1], knots = 65, Boundary.knots = c(50, 80)), 
+  cov_bs[, 2:10], 
+  ns(cov_bs[, 11], knots = 50, Boundary.knots = c(41, 68)),
+  cov_bs[12]
+)
 ps <- plogis(tr_mat %*% gammas)
 treat <- rbinom(n = n, size = 1, prob = ps)
 mean(treat)
@@ -141,8 +151,8 @@ tr_cov_mat <- cbind(treat, cov_bs)
 #    follow-up are limited and most of them are used for patients with
 #    poor prognoses and assigned to the new treatment.
 
-# Time-to-MACE are generated from an accelerated failure time
-# log-normal model. Time-to-censoring from an exponential model.
+# Time-to-MACE are generated from a log-normal accelerated failure time
+# model. Time-to-censoring from a proportional hazards exponential model.
 
 # 3A) Homogenous treatment effect and indep censoring ------------------
 betas <- c(

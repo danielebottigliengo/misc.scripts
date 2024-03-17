@@ -113,7 +113,7 @@ colnames(cov_bs) <- covs
 # regression model with main effects only
 gammas <- c(
   log(0.15), # Intercept fixed to have roughly 25% in the new treatment
-  log(0.96),
+  log(0.955),
   log(1.4), log(0.95), log(0.85), log(0.7), log(0.85),
   log(0.8), log(0.75), log(0.75), log(0.75), 
   log(1.1),
@@ -150,13 +150,17 @@ tr_cov_mat <- cbind(treat, cov_bs)
 
 # 3A) Homogenous treatment effect and indep censoring ------------------
 betas <- c(
-  log(5), # Intercept fixed to have 20% of MACE in the control
-  log(1.22), 
+  log(10), # Intercept fixed to have 20% of MACE in the control
+  log(1.1),
   log(0.9), log(1.08), log(1.25), log(1.6), log(1.4),
-  log(1.8), log(1.8), log(1.8), log(1.5), log(0.87), log(1.5)
+  log(1.8), log(1.8), log(1.8), log(1.5), 
+  log(0.95),
+  log(1.5)
 )
 
-eta <- cbind(rep(1, n), cov_bs) %*% betas
+y_mat <- cbind(rep(1, n), cov_bs)
+
+eta <- y_mat %*% betas
 eff <- -0.05
 tte_0 <- exp(eta + rnorm(n = n))
 tte_1 <- exp(eta + eff + rnorm(n = n))
@@ -167,6 +171,16 @@ mean(mace)
 
 d1 <- as.data.frame(cbind(fup, mace, tr_cov_mat))
 d1$id <- seq_along(n)
+
+# # Check the model
+# summary(
+#   survival::survreg(
+#     survival::Surv(fup, mace) ~ treat + age + age^2 + age^3 + 
+#       female + bmi + diabetes + hypertension + smoking + family_cad + 
+#       previous_mi + history_tia_cva + lvef + lvef^2 + lvef^3 +
+#       dyslipidemia, data = d1, dist = "lognormal"
+#   )
+# )
 
 # 3B) Heterogeneous treatment effect and indep censoring ---------------
 

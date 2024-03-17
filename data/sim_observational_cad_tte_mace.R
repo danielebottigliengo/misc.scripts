@@ -113,19 +113,13 @@ colnames(cov_bs) <- covs
 # regression model with main effects only
 gammas <- c(
   log(0.15), # Intercept fixed to have roughly 25% in the new treatment
-  log(0.96), log(0.85), # Splines coefficients for age
+  log(0.96),
   log(1.4), log(0.95), log(0.85), log(0.7), log(0.85),
   log(0.8), log(0.75), log(0.75), log(0.75), 
-  log(1.1), log(1.2),  # Splines coefficients for LVEF
+  log(1.1),
   log(0.9)
 )
-tr_mat <- cbind(
-  rep(1, n), 
-  ns(cov_bs[, 1], knots = 65, Boundary.knots = c(50, 80)), 
-  cov_bs[, 2:10], 
-  ns(cov_bs[, 11], knots = 50, Boundary.knots = c(41, 68)),
-  cov_bs[12]
-)
+tr_mat <- cbind(rep(1, n), cov_bs)
 ps <- plogis(tr_mat %*% gammas)
 treat <- rbinom(n = n, size = 1, prob = ps)
 mean(treat)
@@ -157,7 +151,8 @@ tr_cov_mat <- cbind(treat, cov_bs)
 # 3A) Homogenous treatment effect and indep censoring ------------------
 betas <- c(
   log(5), # Intercept fixed to have 20% of MACE in the control
-  log(1.22), log(0.9), log(1.08), log(1.25), log(1.6), log(1.4),
+  log(1.22), 
+  log(0.9), log(1.08), log(1.25), log(1.6), log(1.4),
   log(1.8), log(1.8), log(1.8), log(1.5), log(0.87), log(1.5)
 )
 

@@ -183,4 +183,59 @@ d1$id <- seq_along(n)
 # )
 
 # 3B) Heterogeneous treatment effect and indep censoring ---------------
+betas <- c(
+  log(4.9), # Intercept fixed to have 20% of MACE in the control
+  log(1.1),
+  log(0.9), log(1.08), log(1.25), log(1.6), log(1.4),
+  log(1.8), log(1.8), log(1.8), log(1.5), 
+  log(0.95),
+  log(1.5)
+)
+
+y_mat <- cbind(rep(1, n), cov_bs)
+
+eta <- y_mat %*% betas
+eff <- -0.05 + log(0.96) * cov_bs[, "age"] + 
+  log(0.91) * cov_bs[, "diabetes"] +
+  log(0.88) * cov_bs[, "previous_pci"] +
+  log(1.09) * cov_bs[, "lvef"]
+tte_0 <- exp(eta + rnorm(n = n))
+tte_1 <- exp(eta + eff + rnorm(n = n))
+tte <- ifelse(treat == 0, tte_0, tte_1)
+fup <- ifelse(tte <= 365.25 * 5, tte, 365.25 * 5)
+mace <- ifelse(tte <= 365.25 * 5, 1, 0)
+mean(mace)
+
+d2 <- as.data.frame(cbind(fup, mace, tr_cov_mat))
+d2$id <- seq_along(n)
+
+# 3C) Homogeneous treatment effect and dependent censoring -------------
+# Outcome model
+betas <- c(
+  log(10), # Intercept fixed to have 20% of MACE in the control
+  log(1.1),
+  log(0.9), log(1.08), log(1.25), log(1.6), log(1.4),
+  log(1.8), log(1.8), log(1.8), log(1.5), 
+  log(0.95),
+  log(1.5)
+)
+
+y_mat <- cbind(rep(1, n), cov_bs)
+
+eta <- y_mat %*% betas
+eff <- -0.05
+tte_0 <- exp(eta + rnorm(n = n))
+tte_1 <- exp(eta + eff + rnorm(n = n))
+
+# Censoring model
+
+
+tte <- ifelse(treat == 0, tte_0, tte_1)
+fup <- ifelse(tte <= 365.25 * 5, tte, 365.25 * 5)
+mace <- ifelse(tte <= 365.25 * 5, 1, 0)
+mean(mace)
+
+d1 <- as.data.frame(cbind(fup, mace, tr_cov_mat))
+d1$id <- seq_along(n)
+
 

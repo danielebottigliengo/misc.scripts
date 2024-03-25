@@ -1,0 +1,10 @@
+---
+title: "Generalized Random Forest (GRF) for time-to-event data"
+format: html
+editor: visual
+---
+
+# Background and the estimand
+
+# Data description
+

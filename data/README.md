@@ -1,5 +1,15 @@
 # History
 
+## 6th April, 2024
+
+* `sim_observational_cad_tte_mace.R` and related files have been
+  grouped into the `sim_observational_cad_tte_mace` folder.
+  
+* The folder `ccasanet` contains simulated datasets from the
+  [CCASAnet cohort](https://www.ccasanet.org/). The simulated 
+  datasets are available [here](https://biostat.app.vumc.org/wiki/Main/ArchivedAnalyses). More
+  info on the simulated datasets can be found in [Shepherd et al. (2017)](https://academic.oup.com/aje/article/186/4/387/3813218?login=false).
+
 ## 25th March, 2024
 
 * `sim_observational_cad_tte_mace.R`: script to simulate an

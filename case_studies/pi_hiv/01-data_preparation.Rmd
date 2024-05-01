@@ -12,9 +12,55 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  cache = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  echo = TRUE
+)
+```
+
+The dataset of the case studies is publicly available [here](https://datadryad.org/stash/dataset/doi:10.5061/dryad.st5rk).
+
+Load the packages:
+
+```{r}
+library(tidyverse)
+library(here)
+library(janitor)
+library(readxl)
+```
+
+Import the dataset:
+
+```{r}
+raw <- read_xlsx(
+  path = here::here("data", "pi_hiv", "pulm_impairment_HIV.xlsx")
+)
 ```
 
 # Data dictionary
+The following can be used as the dictionary of the dataset:
+
+* `ptid` is the HIV-infected adult identificative number. The dataset
+  contains collected data for $749$ subjects.
+* `visit` is the month at which the follow-up visit was performed. Visits
+  where performed every $6$ months for $3$ years, i.e., the last $36$ 
+  planned visit was at Month-$36$.
+* `ca_sex` is the sex identificative: `1` for males and `2` for females
+* `ca_educ` is the level of education level, with increasing values
+  denoting higher education level.
+* `ca_evrsmk`: has the subject ever smoked? `1` if yes, `2` if no
+* `ca_smkdly`:
+* `ca_agesmk`: age at which the subject started to smoke.
+* `ca_smkstop`: did the subject stop smoking? `1` for no, `2` for yes
+* `ca_typfuel`: exposure to biomass fuel. It is not clear what each
+  value refers to. However, in the publication, the authors stated that
+  nobody reported exposure to biomass fuels. Therefore, the variable
+  can be ignored in the subsequent analyses.
+* `ca_mine`: has the subject worked in mine? `1` for yes, `2` for no.
+* `ca_hadtb`: has the subject ever had turberculosis? `1` for yes, 
+  `2` for no
+*
 
 # Data cleaning

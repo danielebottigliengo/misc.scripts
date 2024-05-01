@@ -1,5 +1,10 @@
 # History
 
+## 1st May, 2024
+
+* Add the folder `pi_hiv` with the raw-data (`.xlsx` format) of the
+  pulmonary impairment in HIV-infected South African adults case study.
+
 ## 6th April, 2024
 
 * `sim_observational_cad_tte_mace.R` and related files have been

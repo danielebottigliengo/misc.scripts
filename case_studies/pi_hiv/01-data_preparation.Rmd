@@ -27,7 +27,6 @@ Load the packages:
 ```{r}
 library(tidyverse)
 library(here)
-library(janitor)
 library(readxl)
 ```
 
@@ -35,7 +34,7 @@ Import the dataset:
 
 ```{r}
 raw <- read_xlsx(
-  path = here::here("data", "pi_hiv", "pulm_impairment_HIV.xlsx")
+  path = here("data", "pi_hiv", "pulm_impairment_HIV.xlsx")
 )
 ```
 
@@ -50,10 +49,16 @@ The following can be used as the dictionary of the dataset:
 * `ca_sex` is the sex identificative: `1` for males and `2` for females
 * `ca_educ` is the level of education level, with increasing values
   denoting higher education level.
-* `ca_evrsmk`: has the subject ever smoked? `1` if yes, `2` if no
-* `ca_smkdly`:
+* `ca_evrsmk`: has the subject ever smoked? `1` if yes, `2` if no.
+* `ca_smkdly`: not clear what it refers to.
 * `ca_agesmk`: age at which the subject started to smoke.
 * `ca_smkstop`: did the subject stop smoking? `1` for no, `2` for yes
+* `ca_yrsstpsmk`: it seems to be the tobacco pack-years smoked, but
+  the summary statistics for the baseline data do not match those
+  in the publication.
+* `ca_nmcignow`: it seems to be the number of cigarettes that the
+  smoker was smoking at the enrollment. Though it likely indicates
+  the number of smoked cigarettes per day, it is not $100 \%$ clear.
 * `ca_typfuel`: exposure to biomass fuel. It is not clear what each
   value refers to. However, in the publication, the authors stated that
   nobody reported exposure to biomass fuels. Therefore, the variable
@@ -61,6 +66,112 @@ The following can be used as the dictionary of the dataset:
 * `ca_mine`: has the subject worked in mine? `1` for yes, `2` for no.
 * `ca_hadtb`: has the subject ever had turberculosis? `1` for yes, 
   `2` for no
-*
+* `ca_evrarv`: is the subject on antiretroviral therapy (ART)? `1` if
+  yes, `2` if no.
+* `ca_arv6m`: was the subject on ART from less than 6 months? `1` if
+  yes, `2` if no.
+* `ce_prefev1`: FEV1 at the visit measured in $L$
+* `ce_prefvc`: FVC at the visit measures in $L$
+* `crp`: C-reactive protein (CRP) at the visit measured in $mg/L$
+* `cd4`: CD4 cell count at the visit measured in $cells/mm^{3}$
+* `vl`: viral load at the visit measured in $copies/mL$
+* `age`: age at the visit in years
+* `bmi`: BMI at the visit measured in $kg/m^{2}$
 
 # Data cleaning
+The dataset is prepared for the analysis taking the following into
+account:
+
+* from the available information, it is not clear how the variables
+  tobacco pack-years and second-hand smoking could be derived. Therefore,
+  in the subsequent analyses, only the variable that captures whether
+  the subject has ever smoked and is currently smoking will be used.
+  
+* a unique variable on ART is derived as in the publication.
+
+* exposure to biomass fuels and working in mine will not be considered
+
+* education level will not be considered
+
+* for each subject, the dataset will be forced to have a row for each
+  planned visit. Visits with no information for a variable will
+  have missing values
+
+```{r}
+d_raw <- raw |> 
+  mutate(
+    across(c(ptid, visit, ca_educ), ~ as.integer(.x)),
+    ca_sex = factor(
+      if_else(ca_sex == 1, "male", "female"), 
+      levels = c("male", "female")
+    ), 
+    ca_smk = factor(
+      case_when(
+        ca_evrsmk == 2 ~ "never",
+        ca_evrsmk == 1 & ca_smkstop == 1 ~ "former",
+        ca_evrsmk == 1 & ca_smkstop == 2 ~ "current",
+      ),
+      levels = c("never", "former", "current")
+    ),
+    ca_hadtb = factor(
+      if_else(ca_hadtb == 1, "yes", "no"), levels = c("no", "yes")
+    ),
+    ca_art = factor(
+      case_when(
+        ca_evrarv == 2 ~ "no",
+        ca_evrarv == 1 & ca_arv6m == 1 ~ "recent",
+        ca_evrarv == 1 & ca_arv6m == 2 ~ "chronic"
+      ),
+      levels = c("no", "recent", "chronic")
+    )
+  ) |> 
+  dplyr::select(
+    ptid, 
+    visit,
+    age,
+    ca_sex,
+    ca_smk,
+    ca_hadtb,
+    bmi,
+    ca_art,
+    crp,
+    cd4,
+    vl, 
+    ce_prefev1,
+    ce_prefvc
+  )
+
+# For each participant, there should be one row for each planned visit
+d_miss <- d_raw |> 
+  tidyr::complete(ptid, tidyr::nesting(visit)) |> 
+  group_by(ptid) |> 
+  mutate(
+    age = if_else(is.na(age), mean(age, na.rm = TRUE), age),
+    across(
+      c(ca_sex, ca_smk, ca_hadtb, ca_art), 
+      ~ if_else(
+        is.na(.x),
+        names(which.max(table(.x))),
+        .x
+      )
+    )
+  ) |> 
+  ungroup()
+```
+
+Glimpse of the dataset:
+
+```{r}
+glimpse(d_miss)
+```
+
+
+Save the dataset into a rds:
+
+```{r}
+write_rds(
+  d_miss, here::here("case_studies", "pi_hiv", "pi_hiv_data.rds")
+)
+```
+
+

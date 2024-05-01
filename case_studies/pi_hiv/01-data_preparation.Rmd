@@ -13,7 +13,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  cache = TRUE,
+  cache = FALSE,
   warning = FALSE,
   message = FALSE,
   echo = TRUE
@@ -156,7 +156,13 @@ d_miss <- d_raw |>
       )
     )
   ) |> 
-  ungroup()
+  ungroup() |> 
+  mutate(
+    ca_sex = factor(ca_sex, levels = c("male", "female")),
+    ca_smk = factor(ca_smk, levels = c("never", "former", "current")),
+    ca_hadtb = factor(ca_hadtb, levels = c("no", "yes")),
+    ca_art = factor(ca_art, levels = c("never", "recent", "chronic"))
+  )
 ```
 
 Glimpse of the dataset:

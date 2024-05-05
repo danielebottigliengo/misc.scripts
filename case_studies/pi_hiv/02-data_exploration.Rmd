@@ -1,0 +1,242 @@
+---
+title: "Pulmonary Impairment in HIV-infected South African Adults"
+subtitle: "Data exploration"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: readable
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  cache = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  echo = TRUE
+)
+```
+
+Load the packages:
+
+```{r}
+library(tidyverse)
+library(here)
+library(Hmisc)
+library(gtsummary)
+library(naniar)
+library(ggExtra)
+library(patchwork)
+library(gridExtra)
+library(rpart)
+library(rpart.plot)
+theme_set(theme_bw(12))
+```
+
+Import the dataset:
+
+```{r}
+p_hiv <- read_rds(here("case_studies", "pi_hiv", "pi_hiv_data.rds"))
+```
+
+# Baseline data description
+Select the baseline dataset:
+
+```{r}
+bs_d <- p_hiv |> 
+  dplyr::filter(visit == 0)
+```
+
+Let's have a very rough overview of the baseline dataset:
+
+```{r, fig.height = 8, fig.width = 6}
+plot(describe(
+  bs_d |> 
+    dplyr::select(-c(ptid, visit)),
+  exclude.missing = FALSE
+))
+```
+
+Some summary statistics on the dataset:
+
+```{r}
+labels <- list(
+  age ~ "Age (years)",
+  ca_sex ~ "Sex",
+  ca_smk ~ "Smoking status",
+  ca_hadtb ~ "History of tuberculosis",
+  bmi ~ "BMI (kg/m^2)",
+  ca_art ~ "Has the subject ever been on ART?",
+  crp ~ "CRP (mg/L)",
+  vl ~ "Viral loads (copies/mL)",
+  vl_dl ~ "Viral loads DL",
+  ce_prefev1 ~ "FEV1 (L)",
+  ce_prefvc ~ "FVC (L)",
+  ce_prefev1_fvc ~ "FEV1/FVC"
+)
+
+bs_d |> 
+  dplyr::select(-c(ptid, visit)) |> 
+  tbl_summary(
+    label = labels,
+    statistic = list(
+      all_continuous() ~ "[{p10}; {p25}; {median}; {p75}; {p90}] - {mean} ({sd})",
+      all_categorical() ~ "{n} ({p}%)"
+    ),
+    missing = "always",
+    missing_text = "(Missing)"
+  )
+```
+
+Look at the bivariate distributions of FEV1 and FVC:
+
+```{r, fig.height = 8, fig.width = 8}
+scatter_p <- ggplot(
+  data = bs_d,
+  mapping = aes(x = ce_prefev1, y = ce_prefvc)
+) +
+  geom_point() +
+  geom_smooth(color = "red") +
+  xlab("FEV1 (L)") +
+  ylab("FVC (L)")
+
+ggMarginal(scatter_p, type = "histogram", bins = 75L)
+```
+
+As expected, the correlation between the spirometry parameters is
+very strong and can be considered as linear. Moreover, both
+parameters have marginal distributions that can be reasonably
+approximated as gaussians.
+
+Explore the association between FEV1 and FVC and ART users:
+
+```{r, fig.height = 8, fig.width = 8}
+scatter_p <- ggplot(
+  data = bs_d,
+  mapping = aes(x = ce_prefev1, y = ce_prefvc, colour = ca_art)
+) +
+  geom_point() +
+  xlab("FEV1 (L)") +
+  ylab("FVC (L)") +
+  theme(legend.position = "bottom")
+
+ggMarginal(scatter_p, type = "histogram", bins = 75L, groupFill = TRUE)
+```
+
+Distributions look homogeneous between groups.
+
+Same for viral loads, CD4 cell counts, BMI, and CRP, which are categorized
+at clinically relevant values as described in [Gupte et al. (2017)](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0184530).
+
+```{r, fig.height = 10, fig.width = 10}
+bs_d_cat <- bs_d |> 
+  mutate(
+    bmi_cat = cut(
+      bmi, 
+      breaks = c(-Inf, 18.5, 25, Inf),
+      ordered_result = TRUE
+    ),
+    crp_cat = cut(
+      crp, 
+      breaks = c(-Inf, 1, 3, 9, Inf),
+      ordered_result = TRUE
+    ),
+    vl_cat = cut(
+      vl, 
+      breaks = c(-Inf, 50, 2655, 13548, Inf),
+      ordered_result = TRUE
+    ),
+    cd4_cat = cut(
+      cd4, 
+      breaks = c(-Inf, 200, 350, 500, Inf),
+      ordered_result = TRUE
+    )
+  )
+
+scatter_p <- ggplot(
+  data = bs_d_cat,
+  mapping = aes(x = ce_prefev1, y = ce_prefvc, colour = bmi_cat)
+) +
+  geom_point() +
+  xlab("FEV1 (L)") +
+  ylab("FVC (L)") +
+  theme(legend.position = "bottom")
+
+p_bmi <- ggMarginal(
+  scatter_p, type = "histogram", bins = 75L, groupFill = TRUE
+)
+
+scatter_p <- ggplot(
+  data = bs_d_cat,
+  mapping = aes(x = ce_prefev1, y = ce_prefvc, colour = crp_cat)
+) +
+  geom_point() +
+  xlab("FEV1 (L)") +
+  ylab("FVC (L)") +
+  theme(legend.position = "bottom")
+
+p_crp <- ggMarginal(
+  scatter_p, type = "histogram", bins = 75L, groupFill = TRUE
+)
+
+scatter_p <- ggplot(
+  data = bs_d_cat,
+  mapping = aes(x = ce_prefev1, y = ce_prefvc, colour = vl_cat)
+) +
+  geom_point() +
+  xlab("FEV1 (L)") +
+  ylab("FVC (L)") +
+  theme(legend.position = "bottom")
+
+p_vl <- ggMarginal(
+  scatter_p, type = "histogram", bins = 75L, groupFill = TRUE
+)
+
+scatter_p <- ggplot(
+  data = bs_d_cat,
+  mapping = aes(x = ce_prefev1, y = ce_prefvc, colour = cd4_cat)
+) +
+  geom_point() +
+  xlab("FEV1 (L)") +
+  ylab("FVC (L)") +
+  theme(legend.position = "bottom")
+
+p_cd4 <- ggMarginal(
+  scatter_p, type = "histogram", bins = 75L, groupFill = TRUE
+)
+
+grid.arrange(p_bmi, p_crp, p_vl, p_cd4, ncol = 2L, nrow = 2L)
+```
+
+Quick exploration of missing data:
+
+```{r, fig.width = 10, fig.height = 10}
+bs_d_miss <- bs_d |> 
+  dplyr::select(-c(ptid, visit, ce_prefev1_fvc)) |> 
+  add_prop_miss()
+
+rpart(
+  prop_miss_all ~ ., 
+  data = bs_d_miss,
+  control = rpart.control(minsplit = 50L)
+) |> 
+  prp(type = 4, extra = 101, prefix = "Prop. Miss = ")
+```
+
+The overall $\%$ of missingness is low, i.e., around $3 \%$. In 
+addition to that, the proportion of missingness seems to be reasonably
+explained by variables included in the dataset. 
+
+# Follow-up data description
+
+# Session Info
+
+```{r}
+si <- sessionInfo()
+print(si, locale = FALSE)
+```
+
+

@@ -96,6 +96,12 @@ account:
 * for each subject, the dataset will be forced to have a row for each
   planned visit. Visits with no information for a variable will
   have missing values
+  
+* the viral loads has the detection limit (DL) at $49 copies/mL$. A
+  variable will be added to flag which viral loads observation is
+  below the DL.
+  
+* create a variable with the ratio $FEV1/FVC$
 
 ```{r}
 d_raw <- raw |> 
@@ -118,12 +124,17 @@ d_raw <- raw |>
     ),
     ca_art = factor(
       case_when(
-        ca_evrarv == 2 ~ "no",
+        ca_evrarv == 2 ~ "never",
         ca_evrarv == 1 & ca_arv6m == 1 ~ "recent",
         ca_evrarv == 1 & ca_arv6m == 2 ~ "chronic"
       ),
-      levels = c("no", "recent", "chronic")
-    )
+      levels = c("never", "recent", "chronic")
+    ),
+    vl_dl = factor(
+      if_else(vl == 49, "below LD", "above LD"),
+      levels = c("above LD", "below LD")
+    ),
+    ce_prefev1_fvc = ce_prefev1/ce_prefvc
   ) |> 
   dplyr::select(
     ptid, 
@@ -137,8 +148,10 @@ d_raw <- raw |>
     crp,
     cd4,
     vl, 
+    vl_dl,
     ce_prefev1,
-    ce_prefvc
+    ce_prefvc,
+    ce_prefev1_fvc 
   )
 
 # For each participant, there should be one row for each planned visit
@@ -180,4 +193,10 @@ write_rds(
 )
 ```
 
+# Session Info
+
+```{r}
+si <- sessionInfo()
+print(si, locale = FALSE)
+```
 

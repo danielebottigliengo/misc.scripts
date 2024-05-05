@@ -396,19 +396,47 @@ d_long <- p_hiv |>
     ce_prefvc_0m, ce_prefvc,
     ce_prefev1_fvc_0m, ce_prefev1_fvc
   )
+
+write_rds(
+  d_long,
+  here::here("case_studies", "pi_hiv", "pi_hiv_data_long.rds")
+)
 ```
 
 Dataset in the wide format:
 
 ```{r}
-d_wide <- d_long |> 
+d_wide <- p_hiv |> 
   mutate(
-    visit = factor(case_when(
+    visit = case_when(
+      visit == 0 ~ "0m",
+      visit == 6 ~ "6m",
       visit == 12 ~ "12m",
+      visit == 18 ~ "18m",
       visit == 24 ~ "24m",
-      visit == 36 ~ "36m"
-    ), levels = c("12m", "24m", "36m"))
+      visit == 30 ~ "30m",
+      visit == 36 ~ "36m",
+    ),
+    vl_dl = if_else(vl_dl == "below LD", 1, 0)
+  ) |> 
+  pivot_longer(
+    cols = c(bmi, crp:ce_prefev1_fvc),
+    names_to = "parm", values_to = "values"
+  ) |> 
+  unite("vars", c(parm, visit), sep = "_") |> 
+  pivot_wider(names_from = vars, values_from = values) |> 
+  # Select final columns
+  dplyr::select(
+    ptid:vl_dl_6m,
+    bmi_12m:vl_dl_18m,
+    bmi_24m:vl_dl_30m,
+    bmi_36m:ce_prefev1_fvc_36m
   )
+
+write_rds(
+  d_long,
+  here::here("case_studies", "pi_hiv", "pi_hiv_data_wide.rds")
+)
 ```
 
 

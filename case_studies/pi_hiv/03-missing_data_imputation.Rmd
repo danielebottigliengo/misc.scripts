@@ -1,0 +1,51 @@
+---
+title: "Pulmonary Impairment in HIV-infected South African Adults"
+subtitle: "Missing data imputation"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: darkly
+    highlight: zenburn
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  cache = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  echo = TRUE
+)
+```
+
+Load the packages:
+
+```{r}
+library(tidyverse)
+library(here)
+library(Hmisc)
+library(mice)
+library(patchwork)
+library(gridExtra)
+theme_set(theme_bw(12))
+```
+
+Import the datasets in the wide and long formats:
+
+```{r}
+long <- read_rds(here("case_studies", "pi_hiv", "pi_hiv_data_long.rds"))
+wide <- read_rds(here("case_studies", "pi_hiv", "pi_hiv_data_wide.rds"))
+```
+
+
+
+# Session Info
+
+```{r}
+si <- sessionInfo()
+print(si, locale = FALSE)
+```
+
+

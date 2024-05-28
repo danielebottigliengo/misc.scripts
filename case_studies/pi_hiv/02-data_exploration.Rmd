@@ -373,6 +373,70 @@ ggplot(
 As expected, the proportion of missingness increases at later follow-up
 times.
 
+In the following, the missing data patterns for FEV1, FVC, CD4, viral
+load, and CRP is evaluated to evaluate whether the extent of drop-outs,
+i.e., the subject missed a visit and all the subsequent ones, or
+intermittent missing data, i.e., the subject missed a visit but returned
+for the following ones.
+
+```{r, fig.height = 8, fig.width = 12}
+d_miss_fup_patterns <- p_hiv |> 
+  dplyr::select(ptid, visit, crp, cd4, vl, ce_prefev1, ce_prefvc) |> 
+  dplyr::filter(visit %in% c(0, 12, 24, 36)) |> 
+  pivot_longer(
+    -c(ptid, visit), names_to = "parm", values_to = "values"
+  ) |>
+  pivot_wider(names_from = visit, values_from = values) |> 
+  dplyr::select(-ptid)
+
+parms <- unique(d_miss_fup_patterns$parm)
+plots <- purrr::map(
+  parms,
+  \(x) {
+    
+    d <- d_miss_fup_patterns |> 
+      dplyr::filter(parm == x) |> 
+      dplyr::select(-parm)
+    
+    gg_miss_upset(d)
+    
+  }
+)
+```
+
+CRP:
+
+```{r, fig.height = 8, fig.width = 12}
+plots[[1]]
+```
+
+CD4:
+
+```{r, fig.height = 8, fig.width = 12}
+plots[[2]]
+```
+
+Viral load:
+
+```{r, fig.height = 8, fig.width = 12}
+plots[[3]]
+```
+
+FEV1:
+
+```{r, fig.height = 8, fig.width = 12}
+plots[[4]]
+```
+
+FVC:
+
+```{r, fig.height = 8, fig.width = 12}
+plots[[5]]
+```
+
+The most common missing data patterns are those that refer to
+subjects dropping-out.
+
 # Prepare the datasets
 Two datasets are now prepared:
 

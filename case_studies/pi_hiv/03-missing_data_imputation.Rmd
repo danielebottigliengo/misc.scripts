@@ -62,7 +62,7 @@ each variable, a regression model with all the remaining variables
 as covariates is specified. This is done to maximize the available
 information for predicting the missing values, including variables
 measured in the future. Overall, $50$ imputations are performed
-after discarding the first $25$ as burn-in. Type-1 weighted predictive
+after discarding the first $25$ as burn-in. Type-2 weighted predictive
 mean matching is used to impute missing values from the posterior
 predictive distributions.
 
@@ -85,13 +85,11 @@ mi_frm <- as.formula(paste(
 mi_obj <- aregImpute(
   formula = mi_frm,
   data = wide,
-  n.impute = 50L,
-  nk = 3L,
-  tlinear = FALSE,
+  n.impute = 50,
+  nk = 5,
   type = "pmm",
-  pmmtype = 3,
-  burnin = 25L,
-  boot.method = "approximate bayesian"
+  pmmtype = 2,
+  burnin = 25
 )
 ```
 Store all the imputed datasets into a list with `mids` class to

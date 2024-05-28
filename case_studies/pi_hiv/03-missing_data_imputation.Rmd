@@ -3,6 +3,7 @@ title: "Pulmonary Impairment in HIV-infected South African Adults"
 subtitle: "Missing data imputation"
 date: "`r Sys.Date()`"
 output: github_document
+bibliography: p_hiv_missing_bib.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -24,6 +25,8 @@ library(mice)
 library(patchwork)
 library(gridExtra)
 theme_set(theme_bw(12))
+seed <- 280191
+set.seed(seed)
 ```
 
 Import the datasets in the wide and long formats:
@@ -34,8 +37,57 @@ wide <- read_rds(here("case_studies", "pi_hiv", "pi_hiv_data_wide.rds"))
 ```
 
 # Missing data imputation strategy
+Multiple imputation (MI) with a chained equations approach is used
+to impute missing values [@van_buuren_2006]. With this approach, a
+regression model is specified for each variable in the dataset. Missing
+values are imputed by regression models for each variable conditional
+on all the other variables in the dataset.
+
+Here, we use the chained equations approach as implemented in the
+`aregImpute` function from the `Hmisc` R package [@moons_2006]. The
+method implemented in `aregImpute` specifies flexible additive 
+regression models and impute missing data using predictive mean
+matching (PMM). The MI approach is implemented using the bootstrap
+to properly account for uncertainty.
+
+Missing data are imputed in the dataset in the wide format and, for
+each variable, a regression model with all the remaining variables
+as covariates is specified. This is done to maximize the available
+information for predicting the missing values, including variables
+measured in the future. Overall, $50$ imputations are performed
+after discarding the first $25$ as burn-in. Type-1 weighted predictive
+mean matching is used to impute missing values from the posterior
+predictive distributions.
 
 # Missing data imputation
+The following chunk of code is used to multiply impute missing data:
+
+```{r}
+# Construct the formula for aregImpute
+mi_frm <- as.formula(paste(
+  "~ ",
+  paste(
+    names(wide)[!names(wide) %in% c(
+      "ptid", "vl_dl_0m", "vl_dl_6m", "vl_dl_12m", "vl_dl_18m",
+      "vl_dl_24m", "vl_dl_30m", "vl_dl_36m"
+    )], 
+    collapse = " + "
+  )
+))
+
+mi_obj <- aregImpute(
+  formula = mi_frm,
+  data = wide,
+  n.impute = 50L,
+  group = wide$ca_art,
+  nk = 0L,
+  tlinear = FALSE,
+  type = "pmm",
+  pmmtype = 1,
+  burnin = 25L
+)
+```
+
 
 # Checking imputed data
 
@@ -46,4 +98,5 @@ si <- sessionInfo()
 print(si, locale = FALSE)
 ```
 
+# References
 

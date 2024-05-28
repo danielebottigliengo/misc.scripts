@@ -23,6 +23,19 @@ wide <- read_rds(here("case_studies", "pi_hiv", "pi_hiv_data_wide.rds"))
 
 # Missing data imputation strategy
 
+Multiple imputation (MI) with a chained equations approach is used to
+impute missing values (S. Van Buuren and Rubin 2006). With this
+approach, a regression model is specified for each variable in the
+dataset. Missing values are imputed by regression models for each
+variable conditional on all the other variables in the dataset.
+
+Here, we use the chained equations approach as implemented in the
+`aregImpute` function from the `Hmisc` R package (Moons et al. 2006).
+The method implemented in `aregImpute` specifies flexible additive
+regression models and impute missing data using predictive mean matching
+(PMM). The MI approach is implemented using the bootstrap to properly
+account for uncertainty.
+
 # Missing data imputation
 
 # Checking imputed data
@@ -68,3 +81,29 @@ print(si, locale = FALSE)
     ## [57] nnet_7.3-19       hms_1.1.3         evaluate_0.23     knitr_1.46       
     ## [61] rlang_1.1.3       Rcpp_1.0.12       glue_1.7.0        minqa_1.2.7      
     ## [65] rstudioapi_0.16.0 R6_2.5.1
+
+# References
+
+<div id="refs" class="references csl-bib-body hanging-indent"
+entry-spacing="0">
+
+<div id="ref-moons_2006" class="csl-entry">
+
+Moons, Karel G. M., Rogier A. R. T. Donders, Theo Stijnen, and Frank E.
+Harrell. 2006. “Using the Outcome for Imputation of Missing Predictor
+Values Was Preferred.” *Journal of Clinical Epidemiology* 59 (10):
+1092–1101.
+https://doi.org/<https://doi.org/10.1016/j.jclinepi.2006.01.009>.
+
+</div>
+
+<div id="ref-van_buuren_2006" class="csl-entry">
+
+S. Van Buuren, C. G. M. Groothuis-Oudshoorn, J. P. L. Brand, and D. B.
+Rubin. 2006. “Fully Conditional Specification in Multivariate
+Imputation.” *Journal of Statistical Computation and Simulation* 76
+(12): 1049–64. <https://doi.org/10.1080/10629360600810434>.
+
+</div>
+
+</div>

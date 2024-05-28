@@ -342,6 +342,31 @@ viral loads decreases over the follow-up and higher observations
 below the DL are observed. There is not clear trend for CRP, even
 though the variability is reduced at the end of the follow-up.
 
+Now check the proportion of missingness over the follow-up time for
+FEV1, FVC, CD4, viral loads, and CRP:
+
+```{r}
+d_miss_fup <- p_hiv |> 
+  dplyr::select(visit, crp, cd4, vl, ce_prefev1, ce_prefvc) |> 
+  dplyr::filter(visit %in% c(0, 12, 24, 36)) |> 
+  pivot_longer(-c(visit), names_to = "parm", values_to = "values") |> 
+  group_by(visit, parm) |> 
+  dplyr::summarise(prop_miss = mean(is.na(values))) |> 
+  ungroup()
+
+ggplot(
+  data = d_miss_fup,
+  mapping = aes(x = visit, y = prop_miss, colour = parm)
+) +
+  geom_line(linewidth = 1) +
+  scale_x_continuous(breaks = c(0, 12, 24, 36)) +
+  xlab("Visit (months)") +
+  ylab("Proportion of missingness")
+```
+
+As expected, the proportion of missingness increases at later follow-up
+times.
+
 # Prepare the datasets
 Two datasets are now prepared:
 

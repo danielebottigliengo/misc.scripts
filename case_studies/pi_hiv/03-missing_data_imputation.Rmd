@@ -87,6 +87,12 @@ mi_obj <- aregImpute(
   burnin = 25L
 )
 ```
+Store all the imputed datasets into a list with `mids` class to
+use the `mice` package features for checking missing data:
+
+```{r}
+
+```
 
 
 # Checking imputed data

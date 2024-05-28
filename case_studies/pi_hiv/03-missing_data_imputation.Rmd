@@ -191,10 +191,107 @@ densityplot(
 The distributions of imputed data nicely resembled those of observed
 data.
 
-Reshape the imputed datasets in the long format:
+Reshape the imputed datasets in the long format and store them
+into a `mids` object:
 
 ```{r}
+imp_data <- complete(mice_obj, action = "all", include = TRUE) |> 
+  imap(
+    \(x, y) {
+      
+      # Baseline dataset
+      bs <- x |> 
+        dplyr::select(ptid:ce_prefvc_0m) |> 
+        mutate(
+          # Indicator of whether VL is below the LOD
+          vl_dl_0m = factor(
+            if_else(vl_0m == 49, "below LD", "above LD"),
+            levels = c("above LD", "below LD")
+          ),
+          # FEV1/FVC
+          ce_prefev1_fvc_0m = ce_prefev1_0m/ce_prefvc_0m
+        )
+      
+      # 6, 18, 30 months measurements dataset
+      six_m <- x |> 
+        dplyr::select(
+          ptid, bmi_6m:vl_6m, bmi_18m:vl_18m, bmi_30m:vl_30m
+        ) |> 
+        pivot_longer(-c(ptid), names_to = "vars", values_to = "vals") |> 
+        separate(vars, c("pars", "visit"), sep = "_") |> 
+        pivot_wider(names_from = pars, values_from = vals) |> 
+        mutate(
+          visit = as.integer(case_when(
+            visit == "6m" ~ 12,
+            visit == "18m" ~ 24,
+            visit == "30m" ~ 36
+          ))
+        ) |> 
+        rename_with(~ str_c(.x, "_6m"), bmi:vl) |> 
+        # Indicator of whether VL is below the LOD
+        mutate(
+          vl_dl_6m = factor(
+            if_else(vl_6m == 49, "below LD", "above LD"),
+            levels = c("above LD", "below LD")
+          )
+        )
+      
+      # 12, 24, 36 months measurements dataset
+      year_m <- x |> 
+        dplyr::select(
+          ptid, 
+          bmi_12m:ce_prefvc_12m, 
+          bmi_24m:ce_prefvc_24m,
+          bmi_36m:ce_prefvc_36m
+        ) |> 
+        pivot_longer(-c(ptid), names_to = "vars", values_to = "vals") |> 
+        mutate(
+          pars = case_when(
+            str_detect(vars, "bmi") ~ "bmi",
+            str_detect(vars, "crp") ~ "crp",
+            str_detect(vars, "cd4") ~ "cd4",
+            str_detect(vars, "vl") ~ "vl",
+            str_detect(vars, "ce_prefev1") ~ "ce_prefev1",
+            str_detect(vars, "ce_prefvc") ~ "ce_prefvc"
+          ),
+          visit = as.integer(case_when(
+            str_detect(vars, "12m") ~ 12,
+            str_detect(vars, "24m") ~ 24,
+            str_detect(vars, "36m") ~ 36
+          ))
+        ) |> 
+        dplyr::select(-vars) |> 
+        pivot_wider(names_from = pars, values_from = vals) |> 
+        mutate(
+          # Indicator of whether VL is below the LOD
+          vl_dl = factor(
+            if_else(vl == 49, "below LD", "above LD"),
+            levels = c("above LD", "below LD")
+          ),
+          # FEV1/FVC
+          ce_prefev1_fvc = ce_prefev1/ce_prefvc
+        )
+      
+      # Join the datasets
+      imp_long <- six_m |> 
+        left_join(year_m, by = c("ptid", "visit")) |> 
+        left_join(bs, by = "ptid") |> 
+        rowid_to_column(var = ".id") |> 
+        mutate(.imp = as.numeric(y), .before = 1L)
+      
+    }
+  )
 
+imp_data_mids <- as.mids(list_rbind(imp_data))
+```
+
+Save the imputed datasets:
+
+```{r}
+readr::write_rds(
+  x = imp_data_mids,
+  file = here::here("case_studies", "pi_hiv", "imp_datasets.rds")
+)
 ```
 
 

@@ -2,8 +2,15 @@
 title: "Pulmonary Impairment in HIV-infected South African Adults"
 subtitle: "Missing data imputation"
 date: "`r Sys.Date()`"
-output: github_document
 bibliography: p_hiv_missing_bib.bib
+link-citations: true
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: readable
+    highlight: tango
 ---
 
 ```{r setup, include=FALSE}
@@ -79,12 +86,12 @@ mi_obj <- aregImpute(
   formula = mi_frm,
   data = wide,
   n.impute = 50L,
-  group = wide$ca_art,
-  nk = 0L,
+  nk = 3L,
   tlinear = FALSE,
   type = "pmm",
-  pmmtype = 1,
-  burnin = 25L
+  pmmtype = 3,
+  burnin = 25L,
+  boot.method = "approximate bayesian"
 )
 ```
 Store all the imputed datasets into a list with `mids` class to

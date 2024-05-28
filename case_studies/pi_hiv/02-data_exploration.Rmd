@@ -2,7 +2,13 @@
 title: "Pulmonary Impairment in HIV-infected South African Adults"
 subtitle: "Data exploration"
 date: "`r Sys.Date()`"
-output: github_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: readable
+    highlight: tango
 ---
 
 ```{r setup, include=FALSE}
@@ -379,11 +385,26 @@ Two datasets are now prepared:
    
 2. a dataset in the wide format with a column for each variable. This
    dataset will be mainly used for imputing missing data.
+   
+Since the dataset has very few subjects who were chronica ART users,
+the ART variable will be recoded to flag subjects who were on ART
+at the time of enrollment regardless of whether they were on ART for 
+more than 6 months:
+
+```{r}
+p_hiv_final <- p_hiv |> 
+  mutate(
+    ca_art = factor(if_else(
+      ca_art == "never", "never", "ever"
+    ), levels = c("never", "ever"))
+  )
+```
+
 
 Dataset in the long format:
 
 ```{r}
-d_long <- p_hiv |> 
+d_long <- p_hiv_final |> 
   # Create baseline variables
   group_by(ptid) |> 
   mutate(
@@ -425,7 +446,7 @@ write_rds(
 Dataset in the wide format:
 
 ```{r}
-d_wide <- p_hiv |> 
+d_wide <- p_hiv_final |> 
   mutate(
     visit = case_when(
       visit == 0 ~ "0m",

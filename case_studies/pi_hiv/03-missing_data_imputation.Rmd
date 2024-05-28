@@ -27,10 +27,9 @@ Load the packages:
 ```{r}
 library(tidyverse)
 library(here)
-library(Hmisc)
 library(mice)
-library(patchwork)
-library(gridExtra)
+library(miceadds)
+n_cores <- parallel::detectCores() - 1
 theme_set(theme_bw(12))
 seed <- 280191
 set.seed(seed)
@@ -50,58 +49,154 @@ regression model is specified for each variable in the dataset. Missing
 values are imputed by regression models for each variable conditional
 on all the other variables in the dataset.
 
-Here, we use the chained equations approach as implemented in the
-`aregImpute` function from the `Hmisc` R package [@moons_2006]. The
-method implemented in `aregImpute` specifies flexible additive 
-regression models and impute missing data using predictive mean
-matching (PMM). The MI approach is implemented using the bootstrap
-to properly account for uncertainty.
-
+Here, we use the fully conditional specification (FCS) chained equations
+approach as implemented in the `mice` R package  [@van_buuren_2018]. 
+The Random Forest (RF) algorithm is used to specify regression models
+for imputing missing values in all the variables in the dataset. This
+choice is motivated by the fact that the RF easily allows to account for
+non-linearities and interactions between and among the variables.
 Missing data are imputed in the dataset in the wide format and, for
 each variable, a regression model with all the remaining variables
-as covariates is specified. This is done to maximize the available
-information for predicting the missing values, including variables
-measured in the future. Overall, $50$ imputations are performed
-after discarding the first $25$ as burn-in. Type-2 weighted predictive
-mean matching is used to impute missing values from the posterior
-predictive distributions.
+as covariates is specified. Overall, $50$ imputed datasets are generated.
 
 # Missing data imputation
 The following chunk of code is used to multiply impute missing data:
 
 ```{r}
-# Construct the formula for aregImpute
-mi_frm <- as.formula(paste(
-  "~ ",
-  paste(
-    names(wide)[!names(wide) %in% c(
-      "ptid", "vl_dl_0m", "vl_dl_6m", "vl_dl_12m", "vl_dl_18m",
-      "vl_dl_24m", "vl_dl_30m", "vl_dl_36m"
-    )], 
-    collapse = " + "
+# Remove the variables that identifies VL below the LOD 
+data_to_imp <- wide |> 
+  dplyr::select(
+    -c(
+      vl_dl_0m, vl_dl_6m, vl_dl_12m, vl_dl_18m, vl_dl_24m, vl_dl_30m, 
+      vl_dl_36m, ce_prefev1_fvc_0m, ce_prefev1_fvc_12m,
+      ce_prefev1_fvc_24m, ce_prefev1_fvc_36m
+    )
   )
-))
 
-mi_obj <- aregImpute(
-  formula = mi_frm,
-  data = wide,
-  n.impute = 50,
-  nk = 5,
-  type = "pmm",
-  pmmtype = 2,
-  burnin = 25
+# Define the imputation regression models ------------------------------
+imp_models <- c(
+  rep("", 6L), # id, age, sex, smoking, TB, ART
+  rep("rf", ncol(data_to_imp) - 6)
+)
+
+# Define the predictor matrix ------------------------------------------
+pred_mat <- make.predictorMatrix(data_to_imp)
+
+# Don't use the subject ID as covariate in the imputation models
+pred_mat[, c("ptid")] <- 0
+
+# Run the MICE algorithm -----------------------------------------------
+n_imp <- 30L
+n_iter <- 30L
+mice_obj <- futuremice(
+  data = data_to_imp,
+  m = n_imp,
+  method = imp_models,
+  predictorMatrix = pred_mat,
+  visitSequence = "monotone",
+  maxit = n_iter,
+  parallelseed = seed,
+  n.core = n_cores,
+  n.imp.core = n_imp/n_cores,
+  future.plan = "multisession",
+  ntree = 100L,
+  .progress = TRUE
+)
+
+# Save the object for future use
+readr::write_rds(
+  x = mice_obj,
+  file = here::here("case_studies", "pi_hiv", "mice_obj.rds")
 )
 ```
 
-Store all the imputed datasets into a list with `mids` class to
-use the `mice` package features for checking missing data:
+
+# Checking imputed data
+Check the convergence of the imputation algorithm
+
+```{r}
+Rhat.mice(mice_obj)
+```
+
+```{r, fig.width = 8, fig.height = 6}
+plot(mice_obj)
+```
+
+No convergence issues are flagged.
+
+Check the distribution of imputed against observed data. Baseline
+measurements:
+
+```{r, fig.width = 8, fig.height = 6}
+densityplot(
+  mice_obj, 
+  ~ bmi_0m + crp_0m + cd4_0m + vl_0m + ce_prefev1_0m + ce_prefvc_0m
+)
+```
+
+At 6 months:
+
+```{r, fig.width = 8, fig.height = 6}
+densityplot(
+  mice_obj, 
+  ~ bmi_6m + crp_6m + cd4_6m + vl_6m
+)
+```
+
+At 12 months:
+
+```{r, fig.width = 8, fig.height = 6}
+densityplot(
+  mice_obj, 
+  ~ bmi_12m + crp_12m + cd4_12m + vl_12m + ce_prefev1_12m + ce_prefvc_12m
+)
+```
+
+At 18 months:
+
+```{r, fig.width = 8, fig.height = 6}
+densityplot(
+  mice_obj, 
+  ~ bmi_18m + crp_18m + cd4_18m + vl_18m
+)
+```
+
+At 24 months:
+
+```{r, fig.width = 8, fig.height = 6}
+densityplot(
+  mice_obj, 
+  ~ bmi_24m + crp_24m + cd4_24m + vl_24m + ce_prefev1_24m + ce_prefvc_24m
+)
+```
+
+At 30 months:
+
+```{r, fig.width = 8, fig.height = 6}
+densityplot(
+  mice_obj, 
+  ~ bmi_30m + crp_30m + cd4_30m + vl_30m
+)
+```
+
+At 36 months:
+
+```{r, fig.width = 8, fig.height = 6}
+densityplot(
+  mice_obj, 
+  ~ bmi_36m + crp_36m + cd4_36m + vl_36m + ce_prefev1_36m + ce_prefvc_36m
+)
+```
+
+The distributions of imputed data nicely resembled those of observed
+data.
+
+Reshape the imputed datasets in the long format:
 
 ```{r}
 
 ```
 
-
-# Checking imputed data
 
 # Session Info
 

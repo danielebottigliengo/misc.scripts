@@ -2,13 +2,7 @@
 title: "Pulmonary Impairment in HIV-infected South African Adults"
 subtitle: "Data preparation"
 date: "`r Sys.Date()`"
-output:
-  html_document:
-    toc: true
-    toc_float: true
-    number_sections: true
-    theme: darkly
-    highlight: zenburn
+output: github_document
 ---
 
 ```{r setup, include=FALSE}

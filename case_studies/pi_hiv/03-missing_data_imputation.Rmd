@@ -2,13 +2,7 @@
 title: "Pulmonary Impairment in HIV-infected South African Adults"
 subtitle: "Missing data imputation"
 date: "`r Sys.Date()`"
-output:
-  html_document:
-    toc: true
-    toc_float: true
-    number_sections: true
-    theme: darkly
-    highlight: zenburn
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
@@ -39,7 +33,11 @@ long <- read_rds(here("case_studies", "pi_hiv", "pi_hiv_data_long.rds"))
 wide <- read_rds(here("case_studies", "pi_hiv", "pi_hiv_data_wide.rds"))
 ```
 
+# Missing data imputation strategy
 
+# Missing data imputation
+
+# Checking imputed data
 
 # Session Info
 

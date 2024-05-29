@@ -1,0 +1,43 @@
+---
+title: "Pulmonary Impairment in HIV-infected South African Adults"
+subtitle: "Baseline data analysis"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: readable
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  cache = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  echo = TRUE
+)
+```
+
+Load the packages:
+
+```{r}
+library(tidyverse)
+library(here)
+library(mice)
+library(miceadds)
+n_cores <- parallel::detectCores() - 1
+theme_set(theme_bw(12))
+seed <- 280191
+set.seed(seed)
+```
+
+# Objectives
+
+# Session Info
+
+```{r}
+si <- sessionInfo()
+print(si, locale = FALSE)
+```

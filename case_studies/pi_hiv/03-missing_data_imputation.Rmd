@@ -47,7 +47,11 @@ Multiple imputation (MI) with a chained equations approach is used
 to impute missing values [@van_buuren_2006]. With this approach, a
 regression model is specified for each variable in the dataset. Missing
 values are imputed by regression models for each variable conditional
-on all the other variables in the dataset.
+on all the other variables in the dataset. The approach assumes the
+missing data pattern to be Missing At Random (MAR), i.e., for each
+variable, the probability of missingness is indepedent of the missing
+data of the variable conditionally on the observed data for the
+variable and other variables in the dataset [@rubin_litte_2019].
 
 Here, we use the fully conditional specification (FCS) chained equations
 approach as implemented in the `mice` R package  [@van_buuren_2018]. 
@@ -57,7 +61,8 @@ choice is motivated by the fact that the RF easily allows to account for
 non-linearities and interactions between and among the variables.
 Missing data are imputed in the dataset in the wide format and, for
 each variable, a regression model with all the remaining variables
-as covariates is specified. Overall, $50$ imputed datasets are generated.
+as covariates is specified. Overall, $30$ imputed datasets are generated
+after $30$ iterations each.
 
 # Missing data imputation
 The following chunk of code is used to multiply impute missing data:

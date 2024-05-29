@@ -10,7 +10,7 @@
 
 
 
-<meta name="date" content="2024-05-28" />
+<meta name="date" content="2024-05-29" />
 
 <title>Pulmonary Impairment in HIV-infected South African Adults</title>
 
@@ -1587,7 +1587,7 @@ border-radius: 0px;
 <h1 class="title toc-ignore">Pulmonary Impairment in HIV-infected South
 African Adults</h1>
 <h3 class="subtitle">Missing data imputation</h3>
-<h4 class="date">2024-05-28</h4>
+<h4 class="date">2024-05-29</h4>
 
 </div>
 
@@ -1611,7 +1611,12 @@ strategy</h1>
 impute missing values <span class="citation">(<a href="#ref-van_buuren_2006">S. Van Buuren and Rubin 2006</a>)</span>.
 With this approach, a regression model is specified for each variable in
 the dataset. Missing values are imputed by regression models for each
-variable conditional on all the other variables in the dataset.</p>
+variable conditional on all the other variables in the dataset. The
+approach assumes the missing data pattern to be Missing At Random (MAR),
+i.e., for each variable, the probability of missingness is indepedent of
+the missing data of the variable conditionally on the observed data for
+the variable and other variables in the dataset <span class="citation">(<a href="#ref-rubin_litte_2019">R. Little
+2019</a>)</span>.</p>
 <p>Here, we use the fully conditional specification (FCS) chained
 equations approach as implemented in the <code>mice</code> R package
 <span class="citation">(<a href="#ref-van_buuren_2018">Buuren
@@ -1621,7 +1626,8 @@ the dataset. This choice is motivated by the fact that the RF easily
 allows to account for non-linearities and interactions between and among
 the variables. Missing data are imputed in the dataset in the wide
 format and, for each variable, a regression model with all the remaining
-variables as covariates is specified. Overall, <span class="math inline">\(50\)</span> imputed datasets are generated.</p>
+variables as covariates is specified. Overall, <span class="math inline">\(30\)</span> imputed datasets are generated after
+<span class="math inline">\(30\)</span> iterations each.</p>
 </div>
 <div id="missing-data-imputation" class="section level1" number="2">
 <h1><span class="header-section-number">2</span> Missing data
@@ -1912,6 +1918,10 @@ data.</p>
 <div id="ref-van_buuren_2018" class="csl-entry">
 Buuren, S. van. 2018. <em>Flexible Imputation of Missing Data. Second
 Edition</em>. Boca Raton, FL: Chapman &amp; Hall/CRC Press.
+</div>
+<div id="ref-rubin_litte_2019" class="csl-entry">
+R. Little, D. Rubin. 2019. <em>Statistical Analysis with Missing Data,
+Third Edition</em>. John Wiley &amp; Sons, Inc.
 </div>
 <div id="ref-van_buuren_2006" class="csl-entry">
 S. Van Buuren, C. G. M. Groothuis-Oudshoorn, J. P. L. Brand, and D. B.

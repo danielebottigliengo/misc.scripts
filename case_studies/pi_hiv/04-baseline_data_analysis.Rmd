@@ -25,15 +25,167 @@ Load the packages:
 ```{r}
 library(tidyverse)
 library(here)
-library(mice)
-library(miceadds)
-n_cores <- parallel::detectCores() - 1
+library(marginaleffects)
+library(splines)
 theme_set(theme_bw(12))
 seed <- 280191
 set.seed(seed)
 ```
 
+Load the dataset:
+
+```{r}
+long <- read_rds(here("case_studies", "pi_hiv", "pi_hiv_data_long.rds"))
+```
+
+
 # Objectives
+The objective of this analysis is to study the association between
+participants characteristics and lung function parameters (FEV1, FVC,
+and FEV1/FVC) measured at baseline. The aim is to characterize how
+expected lung function parameters vary as a function of other individual
+demographics and clinical characteristics in the South-African
+population of HIV-infected adults.
+
+# Data analysis
+The primary analysis is conducted using data from subjects for whom
+complete information is available (i.e., subjects with missing data
+are removed from the analysis), assuming that the missing pattern
+is Missing Completely At Random (MCAR). The association between lung
+function parameters and baseline characteristis is evaluated with a
+linear regression model using a lung function parameter as dependent
+variable, and the following characteristics as covariates:
+
+* Age
+* Sex
+* Smoking status
+* History of tuberculosis
+* Has the subject ever been on ART?
+* BMI
+* CRP
+* Viral load
+* CD4
+
+The model is built starting from a simple specification (main
+effects only) and moving to a more complex specification which includes
+splines to evaluated potential non-linear relationships. The model's
+building process is performed using FEV1 as dependent variable. Once the
+final model's specification is chosen, a model is fitted for each other
+lung function parameter, i.e., FVC and FEV1/FVC. This is done because
+the associations is assumed to be very similar since the lung
+function parameters are highly correlated. As a sensitivity analysis to
+the MCAR assumption, each model for the lung function parameters is
+fitted to the imputed datasets under the MAR assumption.
+
+## Model building
+Select the baseline data:
+
+```{r}
+bs_d <- long |> 
+  dplyr::select(
+    ptid, age:bmi_0m, crp_0m, vl_0m, vl_dl_0m, cd4_0m, ce_prefev1_0m,
+    ce_prefvc_0m, ce_prefev1_fvc_0m
+  ) |> 
+  distinct()
+```
+
+By including subjects for whom complete data is available, how many
+observations are discarded?
+
+```{r}
+bs_d_complete <- bs_d |> 
+  na.omit()
+
+(1 - (nrow(bs_d_complete)/nrow(bs_d))) * 100
+```
+Almost $11 \%$ are subjects are removed from the analysis.
+
+Fit a simple model with main effects only:
+
+```{r}
+fit_1 <- lm(
+  ce_prefev1_0m ~ age + ca_sex + ca_smk + ca_hadtb + ca_art + 
+    bmi_0m + crp_0m + vl_0m + cd4_0m,
+  data = bs_d_complete
+)
+```
+
+Now specify a more complex model with splines terms on the continuous
+covariates to allow for non-linear relationships. Knots will be
+set at clinically relevant values, as reported in Gupte and colleagues
+[@gupte_2018]. For VL, more knots at values close to the LOD will be
+set to account for potential differential associations between 
+individuals who has low VL.
+
+```{r}
+fit_2 <- lm(
+  ce_prefev1_0m ~ ns(age, knots = c(30, 40)) + 
+    ca_sex + ca_smk + ca_hadtb + ca_art + 
+    ns(bmi_0m, knots = c(18.5, 25)) + 
+    ns(crp_0m, knots = c(1, 3, 9)) + 
+    ns(vl_0m, knots = c(50, 60, 75, 2655, 13000)) + 
+    ns(cd4_0m, knots = c(200, 350, 500)),
+  data = bs_d_complete
+)
+```
+
+Perform an ANOVA to check whether the use of the splines increased
+explained variance:
+
+```{r}
+anova(fit_1, fit_2)
+```
+
+## Primary analysis
+The same model specification is used for FVC and FEV1/FVC ratio:
+
+```{r}
+fit_fev1 <- fit_2
+
+fit_fvc <- lm(
+  ce_prefvc_0m ~ ns(age, knots = c(30, 40)) + 
+    ca_sex + ca_smk + ca_hadtb + ca_art + 
+    ns(bmi_0m, knots = c(18.5, 25)) + 
+    ns(crp_0m, knots = c(1, 3, 9)) + 
+    ns(vl_0m, knots = c(50, 60, 75, 2655, 13000)) + 
+    ns(cd4_0m, knots = c(200, 350, 500)),
+  data = bs_d_complete
+)
+
+fit_fev1_fvc <- lm(
+  ce_prefev1_fvc_0m ~ ns(age, knots = c(30, 40)) + 
+    ca_sex + ca_smk + ca_hadtb + ca_art + 
+    ns(bmi_0m, knots = c(18.5, 25)) + 
+    ns(crp_0m, knots = c(1, 3, 9)) + 
+    ns(vl_0m, knots = c(50, 60, 75, 2655, 13000)) + 
+    ns(cd4_0m, knots = c(200, 350, 500)),
+  data = bs_d_complete
+)
+```
+
+For each model, check the amount of variation explained by each term:
+
+```{r}
+anova(fit_fev1)
+```
+
+```{r}
+anova(fit_fvc)
+```
+
+```{r}
+anova(fit_fev1_fvc)
+```
+
+Age, sex are the factors that have the strongest association with the
+lung function parameters. For FEV1 and FVC, BMI, CRP, and VL showed
+a moderate association, whilst not for FEV1/FVC. For FEV1/FVC, a
+strong association is observed for those with a history of 
+tuberculosis.
+
+## Sensitivity analysis
+
+# Description of the associations
 
 # Session Info
 
